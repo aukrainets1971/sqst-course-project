@@ -1,40 +1,58 @@
 """
-vulnerable-app/utils.py — Утилиты с дополнительными уязвимостями
-================================================================
-Курс OTUS DevSecOps: SonarQube от А до Я (Урок 1)
+vulnerable-app/utils.py — Вспомогательные функции с намеренными уязвимостями
+==============================================================================
+Курс OTUS DevSecOps: SonarQube от А до Я
+Урок 2: Быстрый старт — этот файл добавлен для расширения результатов анализа
 
-Дополнительные уязвимости, детектируемые SonarQube Community Edition:
-  — XXE: xml.etree без защиты (S2755 → VULNERABILITY в CE!)
-  — File permissions: chmod 0o777 (S2612 → VULNERABILITY в CE!)
-  — Weak crypto: доп. примеры MD5/SHA1 (S4790 → HOTSPOT)
-  — Insecure temp files: /tmp usage (S5443 → HOTSPOT)
-  — Hard-coded credentials: доп. примеры (S2068/S6418 → VULNERABILITY)
-  — Insecure random: доп. примеры (S2245 → HOTSPOT)
+ВНИМАНИЕ: Этот код содержит НАМЕРЕННЫЕ уязвимости для учебных целей.
+НЕ используйте этот код в production-окружении!
 
-  НЕ детектируемые CE (для ручного анализа):
-  — Insecure deserialization: pickle.loads (S5135 — Enterprise only)
-  — SSRF: urllib без валидации (Enterprise only)
+Детектируемые SonarQube CE:
+  ├── SECURITY HOTSPOT:
+  │   └── Insecure Random (S2245, CWE-330) — random вместо secrets ×2
+  └── НЕ детектируемые CE:
+      ├── Insecure deserialization (CWE-502) — pickle.loads
+      ├── XML External Entity (CWE-611) — ElementTree
+      ├── Open Redirect (CWE-601) — нет валидации URL
+      └── SSRF (CWE-918) — urllib.request.urlopen
 """
 
 import os
 import pickle
-import hashlib
 import random
+import string
 import urllib.request
-from xml.etree import ElementTree
+import xml.etree.ElementTree as ET  # noqa: S405 — намеренная уязвимость
+
+# =============================================================================
+# УЯЗВИМОСТЬ 1: Insecure Deserialization (CWE-502)
+# CE: НЕ детектируется (правило S5135 существует, но не срабатывает на pickle)
+# =============================================================================
+
+def load_user_session(session_data: bytes) -> dict:
+    """Загружает сессию пользователя из бинарных данных."""
+    # УЯЗВИМОСТЬ: pickle.loads на данных из пользовательского ввода
+    # Позволяет выполнить произвольный код при десериализации
+    user = pickle.loads(session_data)  # noqa: S301 — намеренная уязвимость
+    return user
+
+
+def save_user_session(user: dict) -> bytes:
+    """Сохраняет сессию пользователя в бинарные данные."""
+    return pickle.dumps(user)
 
 
 # =============================================================================
-# XML External Entity — XXE (CWE-611)
-# SonarQube CE: S2755 — "XML parsers should not be vulnerable to XXE attacks"
-# Тип: VULNERABILITY (BLOCKER!)
+# УЯЗВИМОСТЬ 2: XML External Entity Injection — XXE (CWE-611)
+# CE: НЕ детектируется (S2755 не срабатывает на xml.etree.ElementTree)
 # =============================================================================
-def parse_config(xml_string: str) -> dict:
-    """
-    НЕБЕЗОПАСНО: парсинг XML без защиты от XXE.
-    БЕЗОПАСНО: использовать defusedxml.ElementTree
-    """
-    root = ElementTree.fromstring(xml_string)  # S2755: XXE
+
+def parse_config(xml_content: str) -> dict:
+    """Разбирает XML-конфигурацию пользователя."""
+    # УЯЗВИМОСТЬ: стандартный ElementTree уязвим к XXE в некоторых версиях Python
+    # В production нужно: defusedxml или lxml с resolve_entities=False
+    root = ET.fromstring(xml_content)  # noqa: S314 — намеренная уязвимость
+
     config = {}
     for child in root:
         config[child.tag] = child.text
@@ -42,106 +60,88 @@ def parse_config(xml_string: str) -> dict:
 
 
 # =============================================================================
-# Insecure File Permissions (CWE-732)
-# SonarQube CE: S2612 — "File permissions should not be world-accessible"
-# Тип: VULNERABILITY (MAJOR)
+# УЯЗВИМОСТЬ 3: Insecure Random — предсказуемые токены (CWE-330)
+# CE: S2245 — детектируется как Security Hotspot ×2 (строки 67 и 74)
 # =============================================================================
-def save_config(config_data: str, path: str):
-    """НЕБЕЗОПАСНО: 0o777 = все могут читать, писать и выполнять."""
-    with open(path, "w") as f:
-        f.write(config_data)
-    os.chmod(path, 0o777)  # S2612: world-accessible
+
+# УЯЗВИМОСТЬ: использование random вместо secrets для генерации токенов
+API_SECRET_KEY = "".join(random.choices(string.ascii_letters + string.digits, k=32))
 
 
-# =============================================================================
-# Weak Cryptography — дополнительные примеры (CWE-328)
-# SonarQube CE: S4790 — SECURITY HOTSPOT
-# =============================================================================
-def verify_integrity(data: bytes, expected_hash: str) -> bool:
-    """НЕБЕЗОПАСНО: MD5 для проверки целостности данных."""
-    computed = hashlib.md5(data).hexdigest()  # S4790
-    return computed == expected_hash
-
-
-def compute_checksum(filepath: str) -> str:
-    """НЕБЕЗОПАСНО: SHA1 для контрольной суммы файла."""
-    sha1 = hashlib.sha1()  # S4790
-    with open(filepath, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            sha1.update(chunk)
-    return sha1.hexdigest()
+def generate_password_reset_token(user_id: int) -> str:
+    """Генерирует токен для сброса пароля."""
+    # УЯЗВИМОСТЬ: random не является криптографически стойким ГПСЧ
+    # Нужно использовать: secrets.token_urlsafe(32)
+    token = "".join(random.choices(string.ascii_letters + string.digits, k=24))
+    return f"{user_id}_{token}"
 
 
 # =============================================================================
-# Insecure Temporary Files (CWE-377)
-# SonarQube CE: S5443 — "Using publicly writable directories"
-# Тип: SECURITY HOTSPOT
+# УЯЗВИМОСТЬ 4: Server-Side Request Forgery — SSRF (CWE-918)
+# CE: НЕ детектируется (нужен taint analysis → Enterprise Edition)
 # =============================================================================
-def create_temp_report(content: str) -> str:
-    """НЕБЕЗОПАСНО: предсказуемое имя файла в /tmp."""
-    filepath = "/tmp/report_" + str(random.randint(1000, 9999)) + ".txt"  # S5443
-    with open(filepath, "w") as f:
-        f.write(content)
-    return filepath
 
-
-def write_log(message: str):
-    """НЕБЕЗОПАСНО: запись логов в общедоступную директорию."""
-    with open("/tmp/app.log", "a") as f:  # S5443
-        f.write(message + "\n")
+def fetch_remote_config(url: str) -> str:
+    """Загружает конфигурацию с удалённого сервера."""
+    # УЯЗВИМОСТЬ: URL передаётся из пользовательского ввода без валидации
+    # Позволяет атакующему обращаться к внутренним сервисам (metadata, 169.254.x.x и т.д.)
+    with urllib.request.urlopen(url) as response:  # noqa: S310 — намеренная уязвимость
+        return response.read().decode("utf-8")
 
 
 # =============================================================================
-# Hard-coded credentials — дополнительные примеры (CWE-798)
-# SonarQube CE: S2068, S6418 — VULNERABILITY
+# УЯЗВИМОСТЬ 5: Open Redirect (CWE-601)
+# CE: НЕ детектируется (нужен taint analysis → Enterprise Edition)
 # =============================================================================
-SMTP_PASSWORD = "email_pass_123"          # S2068: пароль SMTP
-REDIS_AUTH = "redis_secret_token"         # S6418: пароль Redis
-ENCRYPTION_KEY = "AES256_KEY_DO_NOT_SHARE_a1b2c3d4e5f6"  # S6418: ключ
+
+ALLOWED_HOSTS = ["example.com", "trusted-partner.com"]
 
 
-def send_notification(recipient: str, message: str):
-    """Имитация отправки уведомления с захардкоженными кредами."""
-    smtp_config = {
-        "host": "smtp.company.com",
-        "port": 587,
-        "username": "alerts@company.com",
-        "password": SMTP_PASSWORD,
-    }
-    return {"sent_to": recipient, "config": smtp_config}
-
-
-# =============================================================================
-# Insecure Random — дополнительные примеры (CWE-330)
-# SonarQube CE: S2245 — SECURITY HOTSPOT
-# =============================================================================
-def generate_api_key() -> str:
-    """НЕБЕЗОПАСНО: random для генерации API-ключей."""
-    chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-    return "ak_" + "".join(random.choice(chars) for _ in range(40))  # S2245
-
-
-def generate_otp() -> str:
-    """НЕБЕЗОПАСНО: random для одноразовых паролей."""
-    return str(random.randint(100000, 999999))  # S2245
+def build_redirect_url(next_url: str, base: str = "https://example.com") -> str:
+    """Формирует URL для редиректа после авторизации."""
+    # УЯЗВИМОСТЬ: next_url не проверяется должным образом
+    # Позволяет перенаправить пользователя на фишинговый сайт
+    if next_url.startswith("/"):
+        return base + next_url
+    # НЕПРАВИЛЬНАЯ проверка — bypass: "https://evil.com" начинается с "http"
+    if next_url.startswith("http"):
+        return next_url  # УЯЗВИМОСТЬ: нет проверки хоста
+    return base + "/" + next_url
 
 
 # =============================================================================
-# Insecure Deserialization (CWE-502) — pickle.loads
-# CE НЕ детектирует (S5135 требует Enterprise taint analysis)
-# Оставлен для ручного анализа и сравнения с Semgrep/Bandit
+# УЯЗВИМОСТЬ 6: Path Traversal в обработке файлов (CWE-22)
+# CE: НЕ детектируется (нужен taint analysis → Enterprise Edition)
 # =============================================================================
-def load_user_session(data: bytes) -> dict:
-    """НЕБЕЗОПАСНО: pickle может выполнять произвольный код."""
-    return pickle.loads(data)
+
+REPORTS_DIR = "/var/app/reports"
+
+
+def read_report(report_name: str) -> str:
+    """Читает отчёт по имени файла."""
+    # УЯЗВИМОСТЬ: имя файла из пользовательского ввода без нормализации пути
+    # Атакующий может передать: ../../etc/passwd
+    report_path = os.path.join(REPORTS_DIR, report_name)
+    with open(report_path) as f:  # noqa: PTH123 — намеренная уязвимость
+        return f.read()
 
 
 # =============================================================================
-# SSRF Potential (CWE-918)
-# CE НЕ детектирует (нет taint analysis для urllib)
-# Оставлен для ручного анализа
+# Безопасные альтернативы (для сравнения на уроке)
 # =============================================================================
-def fetch_url(url: str) -> str:
-    """НЕБЕЗОПАСНО: запрос по произвольному URL без валидации."""
-    response = urllib.request.urlopen(url)
-    return response.read().decode()
+
+def generate_secure_token(length: int = 32) -> str:
+    """Правильный способ: генерация токена через secrets."""
+    import secrets
+    return secrets.token_urlsafe(length)
+
+
+def safe_read_report(report_name: str) -> str:
+    """Правильный способ: проверка пути перед чтением файла."""
+    import secrets  # noqa: F401
+    safe_name = os.path.basename(report_name)  # убираем path traversal
+    report_path = os.path.realpath(os.path.join(REPORTS_DIR, safe_name))
+    if not report_path.startswith(os.path.realpath(REPORTS_DIR)):
+        raise ValueError(f"Недопустимый путь к файлу: {report_name}")
+    with open(report_path) as f:
+        return f.read()

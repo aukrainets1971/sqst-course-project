@@ -1,13 +1,11 @@
-# Урок 1: Введение в SonarQube и его роль в безопасности
+# Урок 2: Быстрый старт: установка SonarQube и локальное сканирование
 
 ## Что добавлено в этом уроке
 
 | Файл | Описание |
 |------|---------|
-| `docker-compose.yml` | Docker Compose конфигурация для запуска SonarQube |
-| `setup-check.sh` | Скрипт проверки предварительных требований |
-| `sonar-project.properties` | Конфигурация проекта для SonarQube |
-| `vulnerable-app/app.py` | Основной Python файл уязвимого приложения |
+| `scan.sh` | Скрипт для запуска сканирования проекта в SonarQube |
+| `vulnerable-app/utils.py` | Вспомогательные функции Python приложения |
 
 ## Структура проекта
 
@@ -15,9 +13,11 @@
 github_project/
 ├── docker-compose.yml
 ├── setup-check.sh
+├── scan.sh
 ├── sonar-project.properties
 └── vulnerable-app/
-    └── app.py
+    ├── app.py
+    └── utils.py
 ```
 
 ## Быстрый старт
@@ -43,11 +43,17 @@ github_project/
    http://localhost:9000
    ```
 
+5. Выполните сканирование проекта:
+   ```bash
+   bash scan.sh
+   ```
+
 ## Эволюция проекта
 
 | Урок | Название | Новые файлы |
 |------|----------|------------|
 | 1 | Введение в SonarQube и его роль в безопасности | docker-compose.yml, setup-check.sh, sonar-project.properties, vulnerable-app/app.py |
+| 2 | Быстрый старт: установка SonarQube и локальное сканирование | scan.sh, vulnerable-app/utils.py |
 
 ## Требования
 
@@ -58,14 +64,8 @@ github_project/
 
 ## Описание компонентов
 
-### docker-compose.yml
-Конфигурация для запуска SonarQube сервера с PostgreSQL базой данных.
+### scan.sh
+Автоматизированный скрипт для запуска SonarQube Scanner и отправки результатов сканирования на сервер.
 
-### setup-check.sh
-Скрипт проверяет наличие Docker, доступность портов и требуемые ресурсы.
-
-### sonar-project.properties
-Параметры проекта для сканирования, включая язык, исключения и прочие настройки.
-
-### vulnerable-app/app.py
-Простое Python приложение с намеренными уязвимостями для демонстрации возможностей SonarQube.
+### vulnerable-app/utils.py
+Вспомогательные функции приложения, содержащие примеры различных типов уязвимостей.
