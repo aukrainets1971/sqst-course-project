@@ -1,12 +1,10 @@
-# Урок 13: Масштабирование и производительность SonarQube
+# Урок 14: Best practices и антипаттерны работы с SonarQube
 
 ## Что добавлено в этом уроке
 
 | Файл | Описание |
 |------|---------|
-| `performance/docker-compose.prod.yml` | Production Docker Compose конфигурация |
-| `performance/postgresql.conf` | Оптимизированная конфигурация PostgreSQL |
-| `performance/performance-baseline.md` | Документация по бенчмаркам производительности |
+| `audit/configuration-audit.md` | Аудит конфигурации SonarQube и best practices |
 
 ## Структура проекта
 
@@ -27,6 +25,8 @@ github_project/
 ├── setup-quality-gate.sh
 ├── scan.sh
 ├── sonar-project.properties
+├── audit/
+│   └── configuration-audit.md
 ├── backend/
 │   ├── app.py
 │   ├── requirements.txt
@@ -95,6 +95,7 @@ github_project/
 | 11 | Монорепозитории и многомодульные проекты | backend/app.py, backend/utils.py, backend/requirements.txt, backend/sonar-project.properties |
 | 12 | Безопасность платформы и контроль доступа в SonarQube | access-policy.md |
 | 13 | Масштабирование и производительность SonarQube | performance/docker-compose.prod.yml, performance/postgresql.conf, performance/performance-baseline.md |
+| 14 | Best practices и антипаттерны работы с SonarQube | audit/configuration-audit.md |
 
 ## Требования
 
@@ -102,15 +103,13 @@ github_project/
 - **Оперативная память**: минимум 4GB, рекомендуется 8GB (для production рекомендуется 16GB+)
 - **Свободное место на диске**: минимум 5GB (для production рекомендуется 50GB+)
 - **Порт 9000** должен быть свободен для SonarQube
-- **PostgreSQL** для production
 
 ## Описание компонентов
 
-### performance/docker-compose.prod.yml
-Production-ready конфигурация Docker Compose с оптимизациями для масштабирования, включая работу с большими объемами данных и высокой нагрузкой.
-
-### performance/postgresql.conf
-Оптимизированная конфигурация PostgreSQL для performance, включая параметры кэширования, индексов и параллельной обработки запросов.
-
-### performance/performance-baseline.md
-Документация с результатами бенчмарков и рекомендациями по оптимизации производительности SonarQube в больших организациях.
+### audit/configuration-audit.md
+Полный аудит конфигурации SonarQube включающий:
+- Best practices по настройке и управлению платформой
+- Антипаттерны и типичные ошибки при внедрении
+- Рекомендации по оптимизации работы команды
+- Чек-листы для обеспечения качества и безопасности
+- Метрики и KPI для оценки эффективности работы с SonarQube
