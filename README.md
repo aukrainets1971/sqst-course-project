@@ -1,13 +1,10 @@
-# Урок 11: Монорепозитории и многомодульные проекты
+# Урок 12: Безопасность платформы и контроль доступа в SonarQube
 
 ## Что добавлено в этом уроке
 
 | Файл | Описание |
 |------|---------|
-| `backend/app.py` | Backend приложение на Python |
-| `backend/utils.py` | Вспомогательные функции backend |
-| `backend/requirements.txt` | Зависимости backend модуля |
-| `backend/sonar-project.properties` | Конфигурация SonarQube для backend |
+| `access-policy.md` | Политика управления доступом в SonarQube |
 
 ## Структура проекта
 
@@ -18,6 +15,7 @@ github_project/
 │       └── Default.md
 ├── .sonarlint/
 │   └── settings.json
+├── access-policy.md
 ├── docker-compose.yml
 ├── Jenkinsfile
 ├── fp-analysis.md
@@ -89,6 +87,7 @@ github_project/
 | 9 | Анализ open-source компонентов и зависимостей | vulnerable-app/requirements.txt |
 | 10 | Взаимодействие с разработкой и код-ревью | .sonarlint/settings.json, .gitlab/merge_request_templates/Default.md |
 | 11 | Монорепозитории и многомодульные проекты | backend/app.py, backend/utils.py, backend/requirements.txt, backend/sonar-project.properties |
+| 12 | Безопасность платформы и контроль доступа в SonarQube | access-policy.md |
 
 ## Требования
 
@@ -99,14 +98,5 @@ github_project/
 
 ## Описание компонентов
 
-### backend/app.py
-Backend приложение на Python, разделенное в отдельный модуль монорепозитория.
-
-### backend/utils.py
-Вспомогательные функции backend модуля.
-
-### backend/requirements.txt
-Зависимости backend части проекта.
-
-### backend/sonar-project.properties
-Конфигурация SonarQube специально для backend модуля монорепозитория, позволяющая сканировать разные части проекта с различными правилами и настройками.
+### access-policy.md
+Документ, описывающий политику управления доступом в SonarQube, включая управление пользователями, группами, ролями, разрешениями на проекты и бронирование лучших практик безопасности для платформы.
